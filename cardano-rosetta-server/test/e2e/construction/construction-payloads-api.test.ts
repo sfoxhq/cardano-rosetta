@@ -6,7 +6,8 @@ import {
   setupOfflineDatabase,
   setupServer,
   testInvalidNetworkParameters,
-  modifyMAOperation
+  modifyMAOperation,
+  modifyCoinChange
 } from '../utils/test-utils';
 import {
   CONSTRUCTION_PAYLOADS_MULTIPLE_INPUTS,
@@ -155,13 +156,7 @@ describe(CONSTRUCTION_PAYLOADS_ENDPOINT, () => {
   });
 
   test('Should return an error when input operation has no coin change property', async () => {
-    const { operations, ...restPayload } = CONSTRUCTION_PAYLOADS_REQUEST;
-    const payload = {
-      operations: operations.map(({ coin_change, ...restOperation }) => ({
-        ...restOperation
-      })),
-      ...restPayload
-    };
+    const payload = modifyCoinChange(CONSTRUCTION_PAYLOADS_REQUEST);
     const response = await server.inject({
       method: 'post',
       url: CONSTRUCTION_PAYLOADS_ENDPOINT,
@@ -175,19 +170,12 @@ describe(CONSTRUCTION_PAYLOADS_ENDPOINT, () => {
   });
 
   test('Should return an error when input operation has invalid coin identifier', async () => {
-    const { operations, ...restPayload } = CONSTRUCTION_PAYLOADS_REQUEST;
-    const payload = {
-      operations: operations.map(({ coin_change, ...restOperation }) => ({
-        coin_change: {
-          coin_identifier: {
-            identifier: 'invalid_coin_identifier'
-          },
-          coin_action: 'coin_spent'
-        },
-        ...restOperation
-      })),
-      ...restPayload
-    };
+    const payload = modifyCoinChange(CONSTRUCTION_PAYLOADS_REQUEST, {
+      coin_identifier: {
+        identifier: 'invalid_coin_identifier'
+      },
+      coin_action: 'coin_spent'
+    });
     const response = await server.inject({
       method: 'post',
       url: CONSTRUCTION_PAYLOADS_ENDPOINT,
@@ -510,7 +498,7 @@ describe(CONSTRUCTION_PAYLOADS_ENDPOINT, () => {
       network_identifier,
       operations: operations.map(({ metadata: opMetadata, ...rest }) => ({
         metadata: opMetadata && {
-          staking_credential: { hex_bytes: opMetadata.staking_credential!.hex_bytes, curve_type: 'secp256k1' }
+          staking_credential: { hex_bytes: opMetadata.staking_credential?.hex_bytes, curve_type: 'secp256k1' }
         },
         ...rest
       })),
